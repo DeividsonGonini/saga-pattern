@@ -9,6 +9,7 @@ import br.com.fiapstore.pedido.domain.exception.CupomExpiradoException;
 import br.com.fiapstore.pedido.domain.exception.CupomInvalidoException;
 import br.com.fiapstore.pedido.domain.exception.ProdutoNaoEncontradoException;
 import br.com.fiapstore.pedido.domain.repository.IPedidoDatabaseAdapter;
+import br.com.fiapstore.pedido.domain.repository.IPedidoQueueAdapterOUT;
 import br.com.fiapstore.pedido.domain.repository.IProdutoDatabaseAdapter;
 import br.com.fiapstore.pedido.domain.usecase.RegistrarPedidoUseCase;
 import com.google.gson.Gson;
@@ -24,16 +25,19 @@ public class RegistrarPedido implements RegistrarPedidoUseCase {
 
     private final IPedidoDatabaseAdapter pedidoDatabaseAdapter;
     private final IProdutoDatabaseAdapter produtoDatabaseAdapter;
+    //Injeta o AdapterOut
+    private final IPedidoQueueAdapterOUT pedidoQueueAdapterOut;
 
     @Autowired
     private Gson gson;
 
-    public RegistrarPedido(IPedidoDatabaseAdapter pedidoDatabaseAdapter, IProdutoDatabaseAdapter produtoDatabaseAdapter) {
+    public RegistrarPedido(IPedidoDatabaseAdapter pedidoDatabaseAdapter, IPedidoQueueAdapterOUT pedidoQueueAdapter, IProdutoDatabaseAdapter produtoDatabaseAdapter) {
         this.pedidoDatabaseAdapter = pedidoDatabaseAdapter;
-         this.produtoDatabaseAdapter = produtoDatabaseAdapter;
+        this.pedidoQueueAdapterOut = pedidoQueueAdapter;
+        this.produtoDatabaseAdapter = produtoDatabaseAdapter;
     }
 
-
+    @Transactional
     public PedidoDto executar(PedidoDto pedidoDto) throws CupomExpiradoException, CupomInvalidoException, ProdutoNaoEncontradoException {
 
         Produto produto = produtoDatabaseAdapter.findById(pedidoDto.getCodigoProduto());
@@ -45,7 +49,11 @@ public class RegistrarPedido implements RegistrarPedidoUseCase {
         CupomDesconto cupomDesconto = new CupomDesconto(pedidoDto.getCodigoCupom());
         pedido.aplicarDesconto(cupomDesconto);
 
-        Pedido pedidoSalvo  =pedidoDatabaseAdapter.save(pedido);
+        //Persiste no banco de dados
+        Pedido pedidoSalvo = pedidoDatabaseAdapter.save(pedido);
+
+        //Publica a mensagem
+        pedidoQueueAdapterOut.publish(toPedidoMessage(pedido));
 
         return toPedidoDto(pedidoSalvo);
     }
@@ -65,6 +73,7 @@ public class RegistrarPedido implements RegistrarPedidoUseCase {
 
     }
 
+    //Converte o objeto Pedido em String
     private String toPedidoMessage(Pedido pedido){
         Map message = new HashMap<String, String>();
         message.put("codigoPedido",pedido.getCodigoPedido());
