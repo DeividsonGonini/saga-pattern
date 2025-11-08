@@ -29,3 +29,10 @@ admin: http://localhost:15672/
 user: guest
 pass: guest
 ````
+Crie as seguintes filas
+````
+queue1.name=pedidos
+queue2.name=pagamentos_pendentes
+queue3.name=pagamentos_confirmados
+queue4.name=entregas_confirmadas
+````
