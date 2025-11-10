@@ -18,6 +18,7 @@ public class CancelarAgendamentoEntrega implements ICancelarAgendamentoEntregaUs
         this.entregaDatabaseAdapter = entregaDatabaseAdapter;
     }
 
+    @Transactional
     public EntregaDto executar(String codigo) throws OperacaoInvalidaException, EntregaNaoEncontradaException {
 
         Entrega entrega =null;

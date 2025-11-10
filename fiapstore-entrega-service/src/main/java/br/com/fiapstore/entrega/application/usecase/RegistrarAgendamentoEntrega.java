@@ -21,9 +21,9 @@ public class RegistrarAgendamentoEntrega implements IRegistrarAgendamentoEntrega
 
         Entrega entrega = new Entrega(entregaDto.getCodigoPedido(),entregaDto.getCpf());
 
+        //Salva no banco de dados
         entrega = entregaDatabaseAdapter.save(entrega);
 
         return EntregaDto.toEntregaDto(entrega);
-
     }
 }

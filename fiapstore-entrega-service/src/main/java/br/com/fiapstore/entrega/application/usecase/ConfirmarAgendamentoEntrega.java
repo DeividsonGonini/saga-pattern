@@ -5,20 +5,23 @@ import br.com.fiapstore.entrega.domain.entity.Entrega;
 import br.com.fiapstore.entrega.domain.exception.EntregaNaoEncontradaException;
 import br.com.fiapstore.entrega.domain.exception.OperacaoInvalidaException;
 import br.com.fiapstore.entrega.domain.repository.IEntregaDatabaseAdapter;
+import br.com.fiapstore.entrega.domain.repository.IEntregaQueueAdapterOUT;
 import br.com.fiapstore.entrega.domain.usecase.IConfirmarAgendamentoEntregaUseCase;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ConfirmarAgendamentoEntrega implements IConfirmarAgendamentoEntregaUseCase {
 
     private final IEntregaDatabaseAdapter entregaDatabaseAdapter;
+    private final IEntregaQueueAdapterOUT entregaQueueAdapterOUT;
 
-    public ConfirmarAgendamentoEntrega(IEntregaDatabaseAdapter entregaDatabaseAdapter) {
+    public ConfirmarAgendamentoEntrega(IEntregaDatabaseAdapter entregaDatabaseAdapter, IEntregaQueueAdapterOUT entregaQueueAdapterOUT) {
         this.entregaDatabaseAdapter = entregaDatabaseAdapter;
-
+        this.entregaQueueAdapterOUT = entregaQueueAdapterOUT;
     }
 
-    @Override
+    @Transactional
     public EntregaDto executar(String codigoEntrega, String condigoPedido) throws OperacaoInvalidaException, EntregaNaoEncontradaException {
         Entrega entrega =null;
 
@@ -31,7 +34,11 @@ public class ConfirmarAgendamentoEntrega implements IConfirmarAgendamentoEntrega
 
         entrega.confirmarEntrega();
 
+        //Salva no banco de dados
         entrega = entregaDatabaseAdapter.save(entrega);
+
+        //Passo 8 - Publica na fila de entrega Confirmada
+        entregaQueueAdapterOUT.publishEntregaConfirmada(entrega);
 
         return EntregaDto.toEntregaDto(entrega);
 
