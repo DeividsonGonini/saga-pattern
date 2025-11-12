@@ -7,11 +7,13 @@ import br.com.fiapstore.entrega.domain.exception.OperacaoInvalidaException;
 import br.com.fiapstore.entrega.domain.repository.IEntregaDatabaseAdapter;
 import br.com.fiapstore.entrega.domain.repository.IEntregaQueueAdapterOUT;
 import br.com.fiapstore.entrega.domain.usecase.IConfirmarAgendamentoEntregaUseCase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ConfirmarAgendamentoEntrega implements IConfirmarAgendamentoEntregaUseCase {
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final IEntregaDatabaseAdapter entregaDatabaseAdapter;
     private final IEntregaQueueAdapterOUT entregaQueueAdapterOUT;
@@ -21,7 +23,7 @@ public class ConfirmarAgendamentoEntrega implements IConfirmarAgendamentoEntrega
         this.entregaQueueAdapterOUT = entregaQueueAdapterOUT;
     }
 
-    @Transactional
+    @Override
     public EntregaDto executar(String codigoEntrega, String condigoPedido) throws OperacaoInvalidaException, EntregaNaoEncontradaException {
         Entrega entrega =null;
 
@@ -34,11 +36,10 @@ public class ConfirmarAgendamentoEntrega implements IConfirmarAgendamentoEntrega
 
         entrega.confirmarEntrega();
 
-        //Salva no banco de dados
         entrega = entregaDatabaseAdapter.save(entrega);
 
-        //Passo 8 - Publica na fila de entrega Confirmada
         entregaQueueAdapterOUT.publishEntregaConfirmada(entrega);
+        logger.info("Agendamento de entrega Confirmado: {} / pedido: {}", entrega.getCodigo(), entrega.getCodigoPedido());
 
         return EntregaDto.toEntregaDto(entrega);
 

@@ -2,8 +2,7 @@ package br.com.fiapstore.cobranca.infra.messaging;
 
 import br.com.fiapstore.cobranca.application.dto.PagamentoDto;
 import br.com.fiapstore.cobranca.application.usecase.RegistrarPagamento;
-import br.com.fiapstore.cobranca.domain.repository.IPagamentoQueueAdapterIN;
-import com.google.gson.Gson;
+import br.com.fiapstore.cobranca.infra.messaging.entity.MensagemFila;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -15,11 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
-public class PagamentoQueueAdapterIN implements IPagamentoQueueAdapterIN {
+public class PagamentoQueueAdapterIN  {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-
-    @Autowired
-    private Gson gson;
 
     private final RegistrarPagamento registrarPagamento;
 
@@ -28,26 +24,26 @@ public class PagamentoQueueAdapterIN implements IPagamentoQueueAdapterIN {
         this.registrarPagamento = registrarPagamento;
     }
 
-    @RabbitListener(queues = {"${queue1.name}"})
-    @Override
-    public void receive(@Payload String message) {
-        //Converte a mensagem em um HashMap
-        HashMap<String, String> mensagem = gson.fromJson(message, HashMap.class);
-        //Converte o Hashmap em um PagamentoDTO
-        PagamentoDto pagamentoDto = fromMessageToDto(mensagem);
+    @RabbitListener(queues = {"${queue2.name}"})
+    public void receive(@Payload String mensagemDaFila) {
+        HashMap<String, String> mensagemFila = MensagemFila.fromJson(mensagemDaFila);
+        logger.info(mensagemDaFila);
+        logger.info("-------------");
+        logger.info(mensagemFila.toString());
 
-        //Registra o Pagamento
+        PagamentoDto pagamentoDto = fromMensagemToDto(mensagemFila);
         registrarPagamento.executar(pagamentoDto);
+
         logger.info("Pagamento registrado",pagamentoDto);
     }
 
-    private static PagamentoDto fromMessageToDto(Map mensagem) {
+    private static PagamentoDto fromMensagemToDto(HashMap<String, String> mensagemFila) {
         return new PagamentoDto(
                 null,
-                (String)mensagem.get("codigoPedido"),
-                (Double)mensagem.get("precoTotal"),
-                (Double)mensagem.get("percentualDesconto"),
-                (String)mensagem.get("cpf"),
+                mensagemFila.get("codigoPedido"),
+                Double.parseDouble(mensagemFila.get("precoTotal")),
+                Double.parseDouble(mensagemFila.get("percentualDesconto")),
+                mensagemFila.get("cpf"),
                 null,
                 null);
     }

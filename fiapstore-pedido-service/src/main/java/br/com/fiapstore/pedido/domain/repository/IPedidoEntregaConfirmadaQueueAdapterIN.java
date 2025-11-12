@@ -6,10 +6,8 @@ import br.com.fiapstore.pedido.domain.exception.PedidoNaoEncontradoException;
 import br.com.fiapstore.pedido.domain.exception.PercentualDescontoAcimaDoLimiteException;
 import org.springframework.messaging.handler.annotation.Payload;
 
-public interface IPedidoQueueAdapterIN {
+public interface IPedidoEntregaConfirmadaQueueAdapterIN {
 
-    void receive(@Payload String message) throws PedidoNaoEncontradoException,
-            PercentualDescontoAcimaDoLimiteException,
-            OperacaoInvalidaException;
+    void receive(@Payload String message) throws PedidoNaoEncontradoException, PercentualDescontoAcimaDoLimiteException, OperacaoInvalidaException;
 
 }

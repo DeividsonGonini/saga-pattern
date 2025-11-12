@@ -6,10 +6,13 @@ import br.com.fiapstore.cobranca.domain.exception.OperacaoInvalidaException;
 import br.com.fiapstore.cobranca.domain.exception.PagamentoNaoEncontradoException;
 import br.com.fiapstore.cobranca.domain.repository.IPagamentoDatabaseAdapter;
 import br.com.fiapstore.cobranca.domain.usecase.ICancelarPagamentoUseCase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CancelarPagamento implements ICancelarPagamentoUseCase {
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final IPagamentoDatabaseAdapter iPagamentoDatabaseAdapter;
 
@@ -29,6 +32,7 @@ public class CancelarPagamento implements ICancelarPagamentoUseCase {
         pagamento.cancelar();
 
         pagamento = this.iPagamentoDatabaseAdapter.save(pagamento);
+        logger.info("Pagamento Cancelado: {} / pedido: {}", pagamento.getCodigo(), pagamento.getCodigoPedido());
 
         return PagamentoDto.toPagamentoDto(pagamento);
     }

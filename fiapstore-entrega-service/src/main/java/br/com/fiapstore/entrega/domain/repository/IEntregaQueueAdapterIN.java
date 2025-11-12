@@ -9,9 +9,6 @@ import org.springframework.messaging.handler.annotation.Payload;
 import java.util.Map;
 
 public interface IEntregaQueueAdapterIN {
-
-    void receive(@Payload String message) throws EntregaNaoEncontradaException, OperacaoInvalidaException;
-
     static EntregaDto fromMessageToDto(Map mensagem) {
         return new EntregaDto(
                 null,
@@ -22,4 +19,6 @@ public interface IEntregaQueueAdapterIN {
                 null
         );
     }
+
+    void receive(@Payload String message) throws EntregaNaoEncontradaException, OperacaoInvalidaException;
 }

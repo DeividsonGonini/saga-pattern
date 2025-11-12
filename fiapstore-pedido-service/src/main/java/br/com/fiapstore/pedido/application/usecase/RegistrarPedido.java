@@ -13,6 +13,8 @@ import br.com.fiapstore.pedido.domain.repository.IPedidoQueueAdapterOUT;
 import br.com.fiapstore.pedido.domain.repository.IProdutoDatabaseAdapter;
 import br.com.fiapstore.pedido.domain.usecase.RegistrarPedidoUseCase;
 import com.google.gson.Gson;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,15 +27,16 @@ public class RegistrarPedido implements RegistrarPedidoUseCase {
 
     private final IPedidoDatabaseAdapter pedidoDatabaseAdapter;
     private final IProdutoDatabaseAdapter produtoDatabaseAdapter;
-    //Injeta o AdapterOut
-    private final IPedidoQueueAdapterOUT pedidoQueueAdapterOut;
+    private final IPedidoQueueAdapterOUT pedidoQueueAdapter;
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
 
     @Autowired
     private Gson gson;
 
     public RegistrarPedido(IPedidoDatabaseAdapter pedidoDatabaseAdapter, IPedidoQueueAdapterOUT pedidoQueueAdapter, IProdutoDatabaseAdapter produtoDatabaseAdapter) {
         this.pedidoDatabaseAdapter = pedidoDatabaseAdapter;
-        this.pedidoQueueAdapterOut = pedidoQueueAdapter;
+        this.pedidoQueueAdapter = pedidoQueueAdapter;
         this.produtoDatabaseAdapter = produtoDatabaseAdapter;
     }
 
@@ -49,12 +52,11 @@ public class RegistrarPedido implements RegistrarPedidoUseCase {
         CupomDesconto cupomDesconto = new CupomDesconto(pedidoDto.getCodigoCupom());
         pedido.aplicarDesconto(cupomDesconto);
 
-        //Persiste no banco de dados
-        Pedido pedidoSalvo = pedidoDatabaseAdapter.save(pedido);
+        Pedido pedidoSalvo  =pedidoDatabaseAdapter.save(pedido);
 
-        //Publica a mensagem
-        pedidoQueueAdapterOut.publish(toPedidoMessage(pedido));
+        pedidoQueueAdapter.publish(toMessage(pedido));
 
+        logger.info("Pedido registrado: {}", pedidoSalvo.getCodigoPedido() );
         return toPedidoDto(pedidoSalvo);
     }
 
@@ -73,13 +75,14 @@ public class RegistrarPedido implements RegistrarPedidoUseCase {
 
     }
 
-    //Converte o objeto Pedido em String
-    private String toPedidoMessage(Pedido pedido){
+    public static String toMessage(Pedido pedido){
         Map message = new HashMap<String, String>();
+        message.put("tipoOperacao", "atualizacaoPedido");
         message.put("codigoPedido",pedido.getCodigoPedido());
         message.put("precoTotal",pedido.calcularPrecoTotal());
         message.put("percentualDesconto",pedido.getCupomDesconto().getPercentual());
         message.put("cpf",pedido.getCpf());
-        return gson.toJson(message);
+        message.put("statusPedido",pedido.getStatusPedido());
+        return new Gson().toJson(message);
     }
 }

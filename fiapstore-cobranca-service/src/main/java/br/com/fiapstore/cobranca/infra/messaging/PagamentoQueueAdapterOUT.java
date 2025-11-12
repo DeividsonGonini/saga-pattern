@@ -1,7 +1,7 @@
 package br.com.fiapstore.cobranca.infra.messaging;
 
 import br.com.fiapstore.cobranca.domain.entity.Pagamento;
-import br.com.fiapstore.cobranca.domain.repository.IPagamentoQueueAdapterOUT;
+import br.com.fiapstore.cobranca.domain.repository.IPagamentoQueueAdapter;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,37 +14,31 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
-public class PagamentoQueueAdapterOUT implements IPagamentoQueueAdapterOUT {
+public class PagamentoQueueAdapterOUT implements IPagamentoQueueAdapter {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Value("${queue2.name}")
-    private String filaPagamentosPendentes;
+    @Value("${queue1.name}")
+    private String filaReplySagaPedido;
 
-    @Value("${queue3.name}")
-    private String filaPagamentosConfirmados;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
 
     @Override
-    public void publishPagamentoPendente(String message) {
-        rabbitTemplate.convertAndSend(filaPagamentosPendentes, message);
-        logger.info("Publicação na fila filaPagamentosPendentes executada");
+    public void publishAtualizacaoPagamento(String message) {
+        rabbitTemplate.convertAndSend(filaReplySagaPedido, message);
+        logger.info("Publicação na fila filaSagaPedidoReply executada");
     }
 
-    @Override
-    public void publishPagamentoConfirmado(String message) {
-        rabbitTemplate.convertAndSend(filaPagamentosConfirmados, message);
-        logger.info("Publicação na fila filaPagamentosConfirmados executada");
-    }
 
-    //Converte o Objeto Pagamento em uma String
     public static String toMessage(Pagamento pagamento){
         Map message = new HashMap<String, String>();
+        message.put("tipoOperacao","atualizacaoPagamento");
         message.put("codigoPagamento",pagamento.getCodigo());
         message.put("codigoPedido",pagamento.getCodigoPedido());
         message.put("cpf",pagamento.getCpf());
+        message.put("statusPagamento",pagamento.getStatusPagamento());
         return new Gson().toJson(message);
     }
 

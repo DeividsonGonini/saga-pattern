@@ -6,11 +6,14 @@ import br.com.fiapstore.pedido.domain.exception.OperacaoInvalidaException;
 import br.com.fiapstore.pedido.domain.exception.PedidoNaoEncontradoException;
 import br.com.fiapstore.pedido.domain.repository.IPedidoDatabaseAdapter;
 import br.com.fiapstore.pedido.domain.usecase.ConfirmarPedidoUseCase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ConfirmarPedido implements ConfirmarPedidoUseCase {
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final IPedidoDatabaseAdapter pedidoDatabaseAdapter;
 
@@ -21,9 +24,11 @@ public class ConfirmarPedido implements ConfirmarPedidoUseCase {
     @Transactional
     public void executar(String codigoPedido) throws PedidoNaoEncontradoException, OperacaoInvalidaException {
         Pedido pedido = pedidoDatabaseAdapter.findByCodigoPedido(codigoPedido);
-        if(pedido==null) throw new PedidoNaoEncontradoException("Produto não encontrado");
+        if(pedido==null) throw new PedidoNaoEncontradoException("Pedido não encontrado");
 
         pedido.confirmarPedido();
         pedidoDatabaseAdapter.save(pedido);
+        logger.info("Pedido Confirmado: {} / pedido: {}", pedido.getCodigoPedido());
+
     }
 }

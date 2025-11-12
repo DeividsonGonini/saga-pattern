@@ -14,26 +14,29 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
-public class EntregaQueueAdapterOUT implements IEntregaQueueAdapterOUT {
+public class AtualizacaoEntregaQueueAdapterOUT implements IEntregaQueueAdapterOUT {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Value("${queue4.name}")
-    private String filaEntregasConfirmadas;
+    @Value("${queue1.name}")
+    private String filaEntregas;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
     @Override
     public void publishEntregaConfirmada(Entrega entrega) {
-        rabbitTemplate.convertAndSend(filaEntregasConfirmadas, toMessage(entrega));
-        logger.info("Publicação na fila entregasConfirmadas executada");
+        rabbitTemplate.convertAndSend(filaEntregas, toMessage(entrega));
+        logger.info("Atualização entrega publicada");
     }
 
     public static String toMessage(Entrega entrega){
         Map message = new HashMap<String, String>();
+        message.put("tipoOperacao","atualizacaoEntrega");
         message.put("codigoPedido",entrega.getCodigoPedido());
         message.put("codigoEntrega",entrega.getCodigo());
         message.put("cpf",entrega.getCpf());
+        message.put("statusEntrega",entrega.getStatusEntrega());
         return new Gson().toJson(message);
     }
+
 }
